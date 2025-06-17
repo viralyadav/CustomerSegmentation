@@ -10,7 +10,7 @@ st.title("🎯 Customer Segmentation App")
 # Load model
 @st.cache_resource
 def load_model():
-    with open("C:/Users/viral/Desktop/CSFILESProject/segmentation_model.pkl", "rb") as f:
+    with open("segmentation_model.pkl", "rb") as f:
         return pickle.load(f)
 
 model = load_model()
@@ -18,7 +18,7 @@ model = load_model()
 # Load dataset
 @st.cache_data
 def load_data():
-    return pd.read_excel("C:/Users/viral/Desktop/CSFILESProject/marketing_campaign1.xlsx")
+    return pd.read_excel("marketing_campaign1.xlsx")
 
 df = load_data()
 
