@@ -1,11 +1,19 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-from sklearn.cluster import KMeans
+import pickle
 
 st.set_page_config(page_title="Customer Segmentation", layout="centered")
 
 st.title("🎯 Customer Segmentation App")
+
+# Load model
+@st.cache_resource
+def load_model():
+    with open("segmentation_model.pkl", "rb") as f:
+        return pickle.load(f)
+
+model = load_model()
 
 # Load dataset
 @st.cache_data
@@ -13,18 +21,6 @@ def load_data():
     return pd.read_excel("marketing_campaign1.xlsx")
 
 df = load_data()
-
-# Select features for clustering
-features = df[["Income", "Age", "Spending Score"]].dropna()
-
-# Train KMeans model
-@st.cache_resource
-def train_model():
-    model = KMeans(n_clusters=4, random_state=42)
-    model.fit(features)
-    return model
-
-model = train_model()
 
 # Display data preview
 st.subheader("📊 Preview of Data")
@@ -44,4 +40,3 @@ try:
         st.success(f"🎯 Predicted Segment: {int(prediction[0])}")
 except Exception as e:
     st.error(f"Error in prediction: {e}")
-
