@@ -4,7 +4,7 @@ import pickle               #loads the trained model
 import numpy as np
 from scipy.spatial import distance        #distance (from scipy.spatial):Computes distances between points for cluster assignment.
 
-with open("segmentation_model", "rb") as f:
+with open("segmentation_model.pkl", "rb") as f:
     model = pickle.load(f)         #Uses pickle.load(f) to deserialize the saved DBSCAN model.
 
 #Defining a Function to Predict Cluster Assignments
