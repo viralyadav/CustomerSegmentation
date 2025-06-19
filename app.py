@@ -1,42 +1,52 @@
+
 import streamlit as st
-import pandas as pd
+import pickle               #loads the trained model
 import numpy as np
-import pickle
+from scipy.spatial import distance        #distance (from scipy.spatial):Computes distances between points for cluster assignment.
 
-st.set_page_config(page_title="Customer Segmentation", layout="centered")
+with open("model1_pickle", "rb") as f:
+    model = pickle.load(f)         #Uses pickle.load(f) to deserialize the saved DBSCAN model.
 
-st.title("🎯 Customer Segmentation App")
+#Defining a Function to Predict Cluster Assignments
+def dbscan_predict(dbscan_model, X_new):  
+    #Creates an array y_new initialized with -1 (noise points) for all incoming customer data.
+    y_new = np.ones(shape=len(X_new), dtype=int) * -1  
+    for j, x_new in enumerate(X_new):              #X_new: new data points, Compares each input (x_new) against core samples
+        for i, x_core in enumerate(dbscan_model.components_):
+            if distance.euclidean(x_new, x_core) < dbscan_model.eps:
+                y_new[j] = dbscan_model.labels_[dbscan_model.core_sample_indices_[i]]
+                break
+    return y_new                 #Returns the predicted cluster labels.
 
-# Load model
-@st.cache_resource
-def load_model():
-    with open("segmentation_model.pkl", "rb") as f:
-        return pickle.load(f)
 
-model = load_model()
+# Creating the Streamlit Web App Interface
+st.title("🧩 Customer Segmentation with DBSCAN")
+st.markdown("Enter customer features below to predict their **segment** based on spending behavior.")
 
-# Load dataset
-@st.cache_data
-def load_data():
-    return pd.read_excel("marketing_campaign1.xlsx")
+# Input sliders: 
+income = st.slider("Annual Income (normalized)", 0.0, 25.0, 10.0)
+mnt_wines = st.slider("Spending on Wine Products", -1.0, 0.0, -0.88)
+mnt_meat = st.slider("Spending on Meat Products", -1.0, 6.0, -0.7)
+mnt_fruits = st.slider("Spending on Fruits", -1.0, 0.0, -0.5)
+mnt_fish = st.slider("Spending on Fish Products", -1.0, 0.0, -0.6)
+mnt_sweets = st.slider("Spending on Sweet Products", -1.0, 6.0, 2.0)
+mnt_gold = st.slider("Spending on Gold Products", -1.0, 6.0, 1.5)
 
-df = load_data()
+# Converts the user-selected values into a NumPy array, suitable for clustering.
+X_input = np.array([[income, mnt_wines, mnt_meat, mnt_fruits, mnt_fish, mnt_sweets, mnt_gold]])
 
-# Display data preview
-st.subheader("📊 Preview of Data")
-st.dataframe(df.head())
 
-# Input features for prediction
-st.sidebar.header("🔍 Input Customer Details")
-try:
-    income = st.sidebar.slider("Income", min_value=0, max_value=200000, value=50000, step=1000)
-    age = st.sidebar.slider("Age", min_value=18, max_value=100, value=35)
-    score = st.sidebar.slider("Spending Score", min_value=1, max_value=100, value=50)
+# Running Predictions & Displaying Results
+if st.button("Predict Segment"):
+    cluster = dbscan_predict(model, X_input)[0]      #Calls dbscan_predict(model, X_input) to assign a customer segment
+    st.success(f"Predicted Cluster: {cluster}")      #Displays the result
 
-    input_data = np.array([[income, age, score]])
-
-    if st.sidebar.button("Predict Segment"):
-        prediction = model.predict(input_data)
-        st.success(f"🎯 Predicted Segment: {int(prediction[0])}")
-except Exception as e:
-    st.error(f"Error in prediction: {e}")
+    
+    if cluster == -1:
+        st.markdown("💎 **Luxury Sweet Spot Customers**: High spenders on sweets & gold. Likely indulgent and wealthy.")
+    elif cluster == 0:
+        st.markdown("📦 **Balanced Shoppers**: Average spenders across categories—steady and practical.")
+    elif cluster == 1:
+        st.markdown("🥩 **Meat-Lovers Segment**: High spend on meat and proteins—likely bulk buyers.")
+    else:
+        st.warning("Cluster not recognized. Try adjusting input or recheck the model.")
